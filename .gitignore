@@ -1,0 +1,9 @@
+# Ignorera virtual environment
+venv/
+
+# Ignorera temporära filer
+__pycache__/
+*.pyc
+
+# Ignorera VS Code-inställningar
+.vscode/
