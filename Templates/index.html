@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wine Quality API</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="header">
+    <h1>🍷 Wine Quality</h1>
+    <p class="muted">
+      Förutsäg kvalitetsklass (<span class="pill">low</span><span class="pill">medium</span><span class="pill">high</span>) med en tränad Random Forest-modell.
+    </p>
+  </header>
+
+  <div class="layout">
+    <!-- MAIN -->
+    <main>
+      <section class="card">
+        <h2>Testa en prediktion</h2>
+        <form id="predictForm">
+          <div class="grid">
+            <div><label>fixed acidity</label><input name="fixed acidity" type="number" step="0.01" value="7.2"></div>
+
+            <!-- VOLATILE ACIDITY med slider -->
+            <div>
+              <label>volatile acidity</label>
+              <div class="range">
+                <input id="va_range" type="range" min="0.0" max="1.5" step="0.01" value="0.23">
+                <input id="va_input" name="volatile acidity" type="number" step="0.01" value="0.23">
+              </div>
+              <div class="hint">Högre värde → mer flyktig syra (ofta sämre kvalitet).</div>
+            </div>
+
+            <div><label>citric acid</label><input name="citric acid" type="number" step="0.01" value="0.32"></div>
+            <div><label>residual sugar</label><input name="residual sugar" type="number" step="0.01" value="8.5"></div>
+            <div><label>chlorides</label><input name="chlorides" type="number" step="0.001" value="0.058"></div>
+            <div><label>free sulfur dioxide</label><input name="free sulfur dioxide" type="number" step="1" value="47"></div>
+            <div><label>total sulfur dioxide</label><input name="total sulfur dioxide" type="number" step="1" value="186"></div>
+            <div><label>density</label><input name="density" type="number" step="0.0001" value="0.9956"></div>
+            <div><label>pH</label><input name="pH" type="number" step="0.01" value="3.19"></div>
+            <div><label>sulphates</label><input name="sulphates" type="number" step="0.01" value="0.40"></div>
+
+            <!-- ALCOHOL med slider -->
+            <div>
+              <label>alcohol</label>
+              <div class="range">
+                <input id="alc_range" type="range" min="7.0" max="15.0" step="0.1" value="9.9">
+                <input id="alc_input" name="alcohol" type="number" step="0.1" value="9.9">
+              </div>
+              <div class="hint">Högre alkoholhalt → ofta högre kvalitet.</div>
+            </div>
+
+            <div>
+              <label>type</label>
+              <select name="type">
+                <option value="white" selected>white</option>
+                <option value="red">red</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap">
+            <button type="submit">Predict</button>
+            <button class="secondary" type="button" id="loadWhite">Ladda vitt vin-exempel</button>
+            <button class="secondary" type="button" id="loadRed">Ladda rött vin-exempel</button>
+          </div>
+        </form>
+
+        <div id="result" style="margin-top:12px; display:none">
+          <h3>Resultat</h3>
+          <div id="resultBox"></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>API-länkar</h2>
+        <p><a href="/health" target="_blank">/health</a> · <a href="/model-info" target="_blank">/model-info</a></p>
+      </section>
+    </main>
+
+    <!-- ASIDE / LEXIKON -->
+    <aside class="aside">
+      <section class="card">
+        <h3>📚 Vin-lexikon (dataset)</h3>
+        <p class="hint">Kortfattade beskrivningar + hur de tenderar att påverka modellens bedömning.</p>
+        <div class="divider"></div>
+        <dl class="kv">
+          <dt>volatile acidity</dt>
+          <dd>Flyktig syra (t.ex. ättiksyra). <em>Högre</em> nivåer ↘️ kvalitet.</dd>
+
+          <dt>alcohol</dt>
+          <dd>Alkoholhalt (%). <em>Högre</em> nivåer ↗️ kvalitet (upp till en gräns).</dd>
+
+          <dt>density</dt>
+          <dd>Vätskans täthet. Ofta <em>lägre</em> vid högre alkohol → korrelerar med kvalitet.</dd>
+
+          <dt>sulphates</dt>
+          <dd>Svavelhaltiga ämnen som kan stabilisera och förbättra struktur. <em>Högre</em> ↗️ kvalitet (måttligt).</dd>
+
+          <dt>citric acid</dt>
+          <dd>Ger fräschör/syra. Lätt positiv inverkan i vissa viner.</dd>
+
+          <dt>residual sugar</dt>
+          <dd>Kvarvarande socker. Effekt beror på vintyp; högt socker ≠ alltid hög kvalitet.</dd>
+
+          <dt>chlorides</dt>
+          <dd>Saltinnehåll. <em>Högre</em> kan ↘️ kvalitet.</dd>
+
+          <dt>free/total sulfur dioxide</dt>
+          <dd>Konservering/oxidationsskydd. För mycket kan ge bismak.</dd>
+
+          <dt>pH</dt>
+          <dd>Syra/bas (lägre = surare). Påverkan mer komplex; inte lika starkt samband som alkohol/volatile acidity.</dd>
+
+          <dt>type</dt>
+          <dd><code>white</code> eller <code>red</code>. Modellen har lärt sig mönster som skiljer typerna något.</dd>
+        </dl>
+      </section>
+
+      <section class="card">
+        <h3>💡 Tips</h3>
+        <ul class="hint">
+          <li>Dra i <strong>alcohol</strong>-slidern uppåt → ofta högre klass.</li>
+          <li>Dra i <strong>volatile acidity</strong>-slidern uppåt → ofta lägre klass.</li>
+          <li>Byt <strong>type</strong> för att se skillnader mellan rött/vitt.</li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+<script>
+const form = document.getElementById("predictForm");
+const resultWrap = document.getElementById("result");
+const resultBox = document.getElementById("resultBox");
+
+// sliders ↔ inputs sync
+const vaRange = document.getElementById("va_range");
+const vaInput = document.getElementById("va_input");
+vaRange.addEventListener("input", () => vaInput.value = Number(vaRange.value).toFixed(2));
+vaInput.addEventListener("input", () => vaRange.value = vaInput.value);
+
+const alcRange = document.getElementById("alc_range");
+const alcInput = document.getElementById("alc_input");
+alcRange.addEventListener("input", () => alcInput.value = Number(alcRange.value).toFixed(1));
+alcInput.addEventListener("input", () => alcRange.value = alcInput.value);
+
+function clsColor(name) {
+  if (name === "high")   return {badge:"high", fill:"fill-high"};
+  if (name === "medium") return {badge:"medium", fill:"fill-medium"};
+  return {badge:"low", fill:"fill-low"};
+}
+
+function renderResult(json) {
+  const pred = (json.prediction || "").toLowerCase();
+  const palette = clsColor(pred);
+
+  let html = `
+    <div class="badge ${palette.badge}">
+      Prediktion: <strong style="text-transform:uppercase">${pred}</strong>
+    </div>
+  `;
+
+  if (json.proba && json.classes) {
+    const labels = json.classes;
+    const probs  = json.proba;
+
+    html += `<div><div style="font-weight:600;margin:6px 0">Sannolikheter</div>`;
+    labels.forEach((lbl, i) => {
+      const color = clsColor(lbl).fill;
+      const pct = Math.round((probs[i] || 0) * 100);
+      html += `
+        <div class="bar-row">
+          <div class="bar-meta"><span>${lbl}</span><span>${pct}%</span></div>
+          <div class="bar"><div class="bar-fill ${color}" style="width:${pct}%"></div></div>
+        </div>
+      `;
+    });
+    html += `</div>`;
+  }
+
+  html += `
+    <details class="details">
+      <summary class="summary">Visa indata</summary>
+      <pre>${JSON.stringify(json.input, null, 2)}</pre>
+    </details>
+  `;
+
+  resultBox.innerHTML = html;
+  resultWrap.style.display = "block";
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(form).entries());
+  for (const k in data) if (k !== "type") data[k] = Number(data[k]);
+  const res = await fetch("/predict", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(data)
+  });
+  const json = await res.json();
+  renderResult(json);
+});
+
+// presets
+document.getElementById("loadWhite").onclick = () => {
+  const preset = {"fixed acidity":7.2,"volatile acidity":0.23,"citric acid":0.32,"residual sugar":8.5,"chlorides":0.058,"free sulfur dioxide":47,"total sulfur dioxide":186,"density":0.9956,"pH":3.19,"sulphates":0.40,"alcohol":9.9,"type":"white"};
+  for (const k in preset) {
+    const el = form.elements[k];
+    if (el) el.value = preset[k];
+  }
+  vaRange.value = preset["volatile acidity"]; vaInput.value = preset["volatile acidity"];
+  alcRange.value = preset["alcohol"]; alcInput.value = preset["alcohol"];
+};
+document.getElementById("loadRed").onclick = () => {
+  const preset = {"fixed acidity":7.4,"volatile acidity":0.70,"citric acid":0.00,"residual sugar":1.9,"chlorides":0.076,"free sulfur dioxide":11,"total sulfur dioxide":34,"density":0.9978,"pH":3.51,"sulphates":0.56,"alcohol":9.4,"type":"red"};
+  for (const k in preset) {
+    const el = form.elements[k];
+    if (el) el.value = preset[k];
+  }
+  vaRange.value = preset["volatile acidity"]; vaInput.value = preset["volatile acidity"];
+  alcRange.value = preset["alcohol"]; alcInput.value = preset["alcohol"];
+};
+</script>
+</body>
+</html>
