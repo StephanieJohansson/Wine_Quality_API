@@ -77,11 +77,54 @@ Returns metadata about the trained model, including pipeline structure and hyper
   "type": "white"
 }
 
-**Example response:**
+  **Example response:**
 
-{
+  {
   "prediction": "medium",
   "proba": [0.0, 0.05, 0.95],
   "classes": ["low", "medium", "high"]
 }
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+# Project structure:
+
+Wine_Quality_API/
+│
+
+├── app.py                  # Main Flask app
+
+├── settings.py             # Config class
+
+├── Services/
+
+│   └── model_service.py    # Handles model loading & prediction logic
+
+├── Api/
+
+│   └── routes.py           # Defines endpoints
+
+├── templates/
+
+│   └── index.html          # Web UI
+
+├── static/
+
+│   └── style.css           # Frontend styling
+
+└── wine_rf_pipeline.pkl    # Saved trained model
+
+
+
+`App.py` : Starting the API and load configurations. Import routes and model service
+
+`config.py`/`settings.py` : configurations with global settings like file-routes, secret keys and debug.
+
+`Api/routes.py` : Flask blueprint (routes). Defines endpoints (/predict, /health, /model-info). Every route describes a function which runs when the URL calls.
+
+`Service/model_service.py` : Backend-logic. Storing all logics to read the model, handling input data, predicts results and return them.
+
+`templates/index_html` : Frontend. The webbsite itself that a user can use like pick the wines properties and click "predict" to get a result. 
+
+`static/style.css` : styling to the HTML page
+
+`wine_rf_pipeline.pkl` : saved model
