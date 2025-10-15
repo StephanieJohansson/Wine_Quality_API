@@ -17,6 +17,27 @@ def admin_required(fn):
         return fn(*args, **kwargs)
     return wrapper
 
+@admin_bp.get("feature-importance")
+@admin_required
+def admin_feature_importance():
+    svc = current_app.config["MODEL_SERVICE"]
+    return jsonify(svc.feature_importance())
+
+@admin_bp.get("logs")
+@admin_required
+def admin_get_logs():
+    log = current_app.config.get("PRED_LOG") or []
+    # konvertera deque -> list
+    return jsonify({"count": len(log), "items": list(log)})
+
+@admin_bp.delete("logs")
+@admin_required
+def admin_clear_logs():
+    log = current_app.config.get("PRED_LOG")
+    if log is not None:
+        log.clear()
+    return jsonify({"status": "cleared"})
+
 @admin_bp.get("model-info")
 @admin_required
 def admin_model_info():

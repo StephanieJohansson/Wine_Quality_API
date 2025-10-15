@@ -6,6 +6,7 @@ from Web.routes import web_bp
 from flask_jwt_extended import JWTManager
 from admin_panel.routes import admin_bp
 from auth.routes import auth_bp
+from collections import deque
 
 
 def create_app():
@@ -14,6 +15,9 @@ def create_app():
 
     # Initiera ModelService och lägg i app-config
     app.config["MODEL_SERVICE"] = ModelService(app.config["MODEL_PATH"])
+
+    # Logga de senaste N prediktionerna (input + output)
+    app.config["PRED_LOG"] = deque(maxlen=200)
 
     # Initiera JWT
     jwt = JWTManager(app)

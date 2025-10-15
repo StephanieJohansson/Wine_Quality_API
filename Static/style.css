@@ -111,3 +111,46 @@ pre { background: #0b1020; color: #e6edf3; padding: 12px; border-radius: 10px; o
   align-items: center;
 }
 input[type="range"] { width: 100%; }
+
+
+/* ---- LOGIN SHEET ---- */
+/* ===== Modal (login sheet) ===== */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.35);
+  display: none; align-items: center; justify-content: center; z-index: 50;
+}
+.modal {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: var(--shadow); padding: 16px; width: 100%; max-width: 360px;
+}
+.modal h3 { margin-top: 0; }
+.modal-actions { display: flex; gap: 8px; margin-top: 12px; }
+.modal input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 10px; }
+
+.badge-outline {
+  display: inline-block; padding: 6px 10px; border-radius: 999px;
+  border: 1px solid var(--border); color: var(--muted); background: #fff;
+}
+
+/* Admin panel */
+.admin-panel .row { display:flex; gap:8px; flex-wrap:wrap; }
+.admin-panel pre { max-height: 260px; }
+
+.admin-panel {
+  margin-top: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.admin-panel h2 {
+  margin-top: 0;
+}
+.admin-panel pre {
+  background: #fafafa;
+  color: #333;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 13px;
+  overflow-x: auto;
+}

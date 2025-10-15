@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Wine Quality API</title>
   <link rel="stylesheet" href="/static/style.css">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
 </head>
 <body>
   <header class="header">
@@ -13,6 +16,34 @@
       Förutsäg kvalitetsklass (<span class="pill">low</span><span class="pill">medium</span><span class="pill">high</span>) med en tränad Random Forest-modell.
     </p>
   </header>
+
+    <!-- Auth bar -->
+  <section class="card" id="authBar" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+    <div>
+      <span id="authStatus" class="badge-outline">Not logged in</span>
+    </div>
+    <div class="row" style="display:flex; gap:8px;">
+      <button type="button" id="btnLogin">Log in</button>
+      <button type="button" id="btnLogout" class="secondary" style="display:none;">Log out</button>
+    </div>
+  </section>
+
+<!-- Admin Panel (hidden unless role=admin) -->
+  <section class="card admin-panel" id="adminPanel" style="display:none;">
+    <h2>Admin Panel</h2>
+    <p class="hint">Visible only when logged in as admin.</p>
+    <div class="row">
+      <button type="button" id="btnAdminInfo">/admin/model-info</button>
+      <button type="button" id="btnReload">/admin/reload-model</button>
+      <button type="button" id="btnBatch">/admin/predict-batch</button>
+      <button type="button" id="btnFI">/admin/feature-importance</button>
+      <button type="button" id="btnLogs">/admin/logs</button>
+      <button type="button" id="btnClearLogs">clear logs</button>
+    </div>
+    <div style="margin-top:10px;">
+      <pre id="adminOutput">No admin requests yet.</pre>
+    </div>
+  </section>
 
   <div class="layout">
     <!-- MAIN -->
@@ -130,6 +161,24 @@
     </aside>
   </div>
 
+
+
+  <!-- ===== Login Modal ===== -->
+  <div class="modal-backdrop" id="loginModal">
+    <div class="modal">
+      <h3>Log in</h3>
+      <div style="display:grid; gap:8px;">
+        <input id="loginUser" placeholder="Username" value="admin" />
+        <input id="loginPass" placeholder="Password" type="password" value="admin123" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="doLogin">Submit</button>
+        <button type="button" id="cancelLogin" class="secondary">Cancel</button>
+      </div>
+      <p class="hint" style="margin-top:8px;">Admin user: <code>admin / admin123</code> (demo)</p>
+    </div>
+  </div>
+
 <script>
 const form = document.getElementById("predictForm");
 const resultWrap = document.getElementById("result");
@@ -223,6 +272,147 @@ document.getElementById("loadRed").onclick = () => {
   vaRange.value = preset["volatile acidity"]; vaInput.value = preset["volatile acidity"];
   alcRange.value = preset["alcohol"]; alcInput.value = preset["alcohol"];
 };
+
+/* Grab auth elements */
+const authBar      = document.getElementById("authBar");
+const authStatus   = document.getElementById("authStatus");
+const btnLogin     = document.getElementById("btnLogin");
+const btnLogout    = document.getElementById("btnLogout");
+const adminPanel   = document.getElementById("adminPanel");
+const adminOutput  = document.getElementById("adminOutput");
+
+/* Modal elements */
+const modal        = document.getElementById("loginModal");
+const doLogin      = document.getElementById("doLogin");
+const cancelLogin  = document.getElementById("cancelLogin");
+const loginUser    = document.getElementById("loginUser");
+const loginPass    = document.getElementById("loginPass");
+
+/* Auth state helpers */
+function getToken() { try { return localStorage.getItem("jwt_token"); } catch { return null; } }
+function getRole()  { try { return localStorage.getItem("jwt_role"); }  catch { return null; } }
+
+function setAuth(token, role) {
+  if (token) localStorage.setItem("jwt_token", token); else localStorage.removeItem("jwt_token");
+  if (role)  localStorage.setItem("jwt_role", role);   else localStorage.removeItem("jwt_role");
+  renderAuth();
+}
+
+function renderAuth() {
+  const token = getToken();
+  const role  = getRole();
+  if (!token) {
+    authStatus.textContent = "Not logged in";
+    btnLogin.style.display = "";
+    btnLogout.style.display = "none";
+    adminPanel.style.display = "none";
+  } else {
+    authStatus.textContent = `Logged in as ${role || "user"}`;
+    btnLogin.style.display = "none";
+    btnLogout.style.display = "";
+    adminPanel.style.display = (role === "admin") ? "" : "none";
+  }
+}
+
+/* Attach Authorization header if token exists */
+function authHeaders(extra={}) {
+  const token = getToken();
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+}
+
+/* Login modal handling */
+btnLogin.onclick = () => { modal.style.display = "flex"; loginUser.focus(); };
+cancelLogin.onclick = () => { modal.style.display = "none"; };
+btnLogout.onclick = () => { setAuth(null, null); adminOutput.textContent = "Logged out."; };
+
+doLogin.onclick = async () => {
+  try {
+    const res = await fetch("/login", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ username: loginUser.value.trim(), password: loginPass.value })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    setAuth(json.token, json.role);
+    modal.style.display = "none";
+  } catch (e) {
+    alert("Login failed. Check credentials.");
+  }
+};
+
+/* Admin buttons */
+document.getElementById("btnAdminInfo").onclick = async () => {
+  try {
+    const res = await fetch("/admin/model-info", { headers: authHeaders() });
+    const json = await res.json();
+    adminOutput.textContent = JSON.stringify(json, null, 2);
+  } catch (e) {
+    adminOutput.textContent = "Error: " + e;
+  }
+};
+
+document.getElementById("btnReload").onclick = async () => {
+  try {
+    const res = await fetch("/admin/reload-model", { method:"POST", headers: authHeaders() });
+    const json = await res.json();
+    adminOutput.textContent = JSON.stringify(json, null, 2);
+  } catch (e) {
+    adminOutput.textContent = "Error: " + e;
+  }
+};
+
+document.getElementById("btnBatch").onclick = async () => {
+  try {
+    const batch = [{
+      "fixed acidity": 7.2, "volatile acidity": 0.23, "citric acid": 0.32, "residual sugar": 8.5,
+      "chlorides": 0.058, "free sulfur dioxide": 47, "total sulfur dioxide": 186, "density": 0.9956,
+      "pH": 3.19, "sulphates": 0.40, "alcohol": 9.9, "type": "white"
+    }];
+    const res = await fetch("/admin/predict-batch", {
+      method:"POST",
+      headers: authHeaders({"Content-Type":"application/json"}),
+      body: JSON.stringify(batch)
+    });
+    const json = await res.json();
+    adminOutput.textContent = JSON.stringify(json, null, 2);
+  } catch (e) {
+    adminOutput.textContent = "Error: " + e;
+  }
+};
+
+document.getElementById("btnFI").onclick = async () => {
+  try {
+    const res = await fetch("/admin/feature-importance", { headers: authHeaders() });
+    const json = await res.json();
+    adminOutput.textContent = JSON.stringify(json, null, 2);
+  } catch (e) {
+    adminOutput.textContent = "Error: " + e;
+  }
+};
+
+document.getElementById("btnLogs").onclick = async () => {
+  try {
+    const res = await fetch("/admin/logs", { headers: authHeaders() });
+    const json = await res.json();
+    adminOutput.textContent = JSON.stringify(json, null, 2);
+  } catch (e) {
+    adminOutput.textContent = "Error: " + e;
+  }
+};
+
+document.getElementById("btnClearLogs").onclick = async () => {
+  try {
+    const res = await fetch("/admin/logs", { method:"DELETE", headers: authHeaders() });
+    const json = await res.json();
+    adminOutput.textContent = JSON.stringify(json, null, 2);
+  } catch (e) {
+    adminOutput.textContent = "Error: " + e;
+  }
+};
+
+/* Call once on load */
+renderAuth();
 </script>
 </body>
 </html>

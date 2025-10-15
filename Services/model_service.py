@@ -74,3 +74,23 @@ class ModelService:
             "params": {k: (str(v) if not isinstance(v, (int, float, str, bool)) else v)
                        for k, v in params.items()}
         }
+    
+    def feature_importance(self):
+        """Returnera feature importances om modellen stödjer det (RF gör det)."""
+        try:
+            rf = self.model.named_steps.get("rf")
+            importances = getattr(rf, "feature_importances_", None)
+            if importances is None:
+                return {"supports_importance": False}
+
+            # namnsätta enligt exakt FEATUR-ordningen efter scaler/one-hot
+            feats = list(self.FEATURES)
+            out = [
+                {"feature": f, "importance": float(i)}
+                for f, i in zip(feats, importances)
+            ]
+            # sortera viktigast först
+            out.sort(key=lambda x: x["importance"], reverse=True)
+            return {"supports_importance": True, "importances": out}
+        except Exception as e:
+            return {"supports_importance": False, "error": str(e)}
