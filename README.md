@@ -4,6 +4,16 @@ This is an end-to-end maching learning workflow developed as a part of an exam a
 
 Built is using **Python**, **Scikit-learn** and **Flask**. The project predicts **wine quality** (low / medium / high) based on various chemical properties from the public *Wine Quality Dataset*.
 
+# Model Summary
+
+* Dataset: https://www.kaggle.com/datasets/rajyellow46/wine-quality
+* Type: Random Forest Classifier (inside a scikit-learn `Pipeline` with `StandardScaler`)
+* Target: `quality` grouped into low / medium / high
+* Performance (weighted F1):
+   * Logistic Regression ≈ 0.71
+   * Random Forest ≈ 0.80
+   * Gradient Boosting ≈ 0.74
+
 
 ## Project Overview
 
@@ -20,7 +30,46 @@ Predict wine quality (`low`, `medium`, `high`) from 11 chemical variables such a
 5. RESTful API development in **Flask**  
    → serves predictions via JSON + user-friendly web UI
 
-   -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ADMIN VS USER ROLES
+
+| Role-------------|---------What they can do-------------------------------|
+   
+| -----------------| ----------------------------------------------------------|
+
+| Not logged in--|---Use the web UI and **POST `/predict`**.---------------|
+
+| `user`----------|--Same as not logged in (no extra privileges).----------|
+
+| `admin`---------|--Everything above **plus** admin panel features (below). |
+
+
+# Login flow
+
+* `POST /login` with JSON `{ "username": "admin", "password": "admin123" }`
+
+* Response: `{ "token": "...", "role": "admin" }`
+
+* The web UI stores the token in `localStorage` and shows the Admin Panel if `role === "admin"`.
+
+* Admin requests include header: `Authorization: Bearer <token>`.
+
+
+## Admin-only (JWT `role=admin`)
+
+* GET `/admin/model-info` → full model metadata (pipeline steps, classes, hyperparameters)
+
+* POST `/admin/reload-model` → hot-reload model from disk (no server restart)
+
+* GET `/admin/feature-importance` → feature importances (sorted), if supported by the model
+
+* GET `/admin/logs` → recent prediction log (count + items)
+
+* DELETE `/admin/logs` → clear the log
+
+* POST `/admin/predict-batch` → predict multiple samples at once (JSON array of payloads)
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ENDPOINTS
 
    * GET /health
   Checks the API and model status.
@@ -86,6 +135,28 @@ Returns metadata about the trained model, including pipeline structure and hyper
 }
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+# WEB UI
+
+* Interactive form with sliders (e.g., alcohol, volatile acidity).
+
+* Predict button calls /predict and renders:
+
+   * main class (badge) and
+
+   * class probabilities as progress bars.
+
+* Login modal (top-right) to obtain JWT.
+
+* Admin Panel appears below the login bar when logged in as admin:
+
+   * Buttons call admin endpoints and display JSON results in a console panel.
+
+* A right-hand “wine feature lexicon” explains each input variable.
+
+The UI makes it easy to see how changing alcohol/acidity shifts the predicted quality.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 # Project structure:
 
 Wine_Quality_API/
@@ -102,6 +173,14 @@ Wine_Quality_API/
 ├── Api/
 
 │   └── routes.py           # Defines endpoints
+
+├─ admin/
+
+│  └─ routes.py               # Admin-only endpoints (reload, logs, feature importance, batch predict)
+
+├─ auth/
+
+│  └─ routes.py               # /login issues JWT tokens (role in claims)
 
 ├── templates/
 
