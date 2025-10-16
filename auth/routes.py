@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token
 
-# Create a blueprint for authentication endpoints, with URL prefix "/"
-auth_bp = Blueprint("auth", __name__, url_prefix="/")
+# Put auth endpoints under /auth so frontend /auth/login matches
+auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 # Hard-coded users for demo purposes (username, password, role)
 USERS = {
@@ -12,7 +12,6 @@ USERS = {
 
 @auth_bp.post("login")
 def login():
-    
     # Handles login requests.
     # Expects JSON: { "username": "...", "password": "..." }
     # Returns JWT token and user role if credentials are valid.
