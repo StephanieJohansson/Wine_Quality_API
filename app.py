@@ -11,25 +11,26 @@ from collections import deque
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object(Config)
+    app.config.from_object(Config)  # Load configuration from Config class
 
-    # Initiera ModelService och lägg i app-config
+    # Initialize ModelService and store in app config
     app.config["MODEL_SERVICE"] = ModelService(app.config["MODEL_PATH"])
 
-    # Logga de senaste N prediktionerna (input + output)
+    # Store the latest N predictions (input + output) in a deque
     app.config["PRED_LOG"] = deque(maxlen=200)
 
-    # Initiera JWT
+    # Initialize JWT manager for authentication
     jwt = JWTManager(app)
 
-    # Registrera blueprints
-    app.register_blueprint(web_bp)  # "/" – hemsida
-    app.register_blueprint(api_bp)  # "/health", "/model-info", "/predict", ...
-    app.register_blueprint(auth_bp)  # "/auth"
-    app.register_blueprint(admin_bp)  # "/admin"
+    # Register blueprints for different parts of the application
+    app.register_blueprint(web_bp)      # "/" – main website
+    app.register_blueprint(api_bp)      # "/health", "/model-info", "/predict", ...
+    app.register_blueprint(auth_bp)     # "/auth" – authentication endpoints
+    app.register_blueprint(admin_bp)    # "/admin" – admin panel endpoints
 
     return app
 
 if __name__ == "__main__":
     app = create_app()
+    # Run the Flask development server
     app.run(host="0.0.0.0", port=5000, debug=app.config["DEBUG"])

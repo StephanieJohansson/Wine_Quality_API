@@ -6,18 +6,20 @@
   <title>Wine Quality API</title>
   <link rel="stylesheet" href="/static/style.css">
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <!-- Flask template links for static files -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
 </head>
+
 <body>
   <header class="header">
     <h1>🍷 Wine Quality</h1>
     <p class="muted">
-      Förutsäg kvalitetsklass (<span class="pill">low</span><span class="pill">medium</span><span class="pill">high</span>) med en tränad Random Forest-modell.
+      Predict wine quality class (<span class="pill">low</span><span class="pill">medium</span><span class="pill">high</span>) using a trained Random Forest model.
     </p>
   </header>
 
-    <!-- Auth bar -->
+  <!-- Authentication bar: shows login/logout and current status -->
   <section class="card" id="authBar" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
     <div>
       <span id="authStatus" class="badge-outline">Not logged in</span>
@@ -28,11 +30,12 @@
     </div>
   </section>
 
-<!-- Admin Panel (hidden unless role=admin) -->
+  <!-- Admin Panel: only visible for admin users (controlled by JS) -->
   <section class="card admin-panel" id="adminPanel" style="display:none;">
     <h2>Admin Panel</h2>
     <p class="hint">Visible only when logged in as admin.</p>
     <div class="row">
+      <!-- Each button triggers an admin API endpoint via JS -->
       <button type="button" id="btnAdminInfo">/admin/model-info</button>
       <button type="button" id="btnReload">/admin/reload-model</button>
       <button type="button" id="btnBatch">/admin/predict-batch</button>
@@ -41,29 +44,28 @@
       <button type="button" id="btnClearLogs">clear logs</button>
     </div>
     <div style="margin-top:10px;">
+      <!-- Output area for admin API responses -->
       <pre id="adminOutput">No admin requests yet.</pre>
     </div>
   </section>
 
   <div class="layout">
-    <!-- MAIN -->
+    <!-- Main content: prediction form and API links -->
     <main>
       <section class="card">
-        <h2>Testa en prediktion</h2>
+        <h2>Try a prediction</h2>
         <form id="predictForm">
           <div class="grid">
+            <!-- Input fields for wine features; some have sliders for better UX -->
             <div><label>fixed acidity</label><input name="fixed acidity" type="number" step="0.01" value="7.2"></div>
-
-            <!-- VOLATILE ACIDITY med slider -->
             <div>
               <label>volatile acidity</label>
               <div class="range">
                 <input id="va_range" type="range" min="0.0" max="1.5" step="0.01" value="0.23">
                 <input id="va_input" name="volatile acidity" type="number" step="0.01" value="0.23">
               </div>
-              <div class="hint">Högre värde → mer flyktig syra (ofta sämre kvalitet).</div>
+              <div class="hint">Higher value → more volatile acid (often lower quality).</div>
             </div>
-
             <div><label>citric acid</label><input name="citric acid" type="number" step="0.01" value="0.32"></div>
             <div><label>residual sugar</label><input name="residual sugar" type="number" step="0.01" value="8.5"></div>
             <div><label>chlorides</label><input name="chlorides" type="number" step="0.001" value="0.058"></div>
@@ -72,17 +74,14 @@
             <div><label>density</label><input name="density" type="number" step="0.0001" value="0.9956"></div>
             <div><label>pH</label><input name="pH" type="number" step="0.01" value="3.19"></div>
             <div><label>sulphates</label><input name="sulphates" type="number" step="0.01" value="0.40"></div>
-
-            <!-- ALCOHOL med slider -->
             <div>
               <label>alcohol</label>
               <div class="range">
                 <input id="alc_range" type="range" min="7.0" max="15.0" step="0.1" value="9.9">
                 <input id="alc_input" name="alcohol" type="number" step="0.1" value="9.9">
               </div>
-              <div class="hint">Högre alkoholhalt → ofta högre kvalitet.</div>
+              <div class="hint">Higher alcohol → often higher quality.</div>
             </div>
-
             <div>
               <label>type</label>
               <select name="type">
@@ -91,79 +90,67 @@
               </select>
             </div>
           </div>
-
           <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap">
             <button type="submit">Predict</button>
-            <button class="secondary" type="button" id="loadWhite">Ladda vitt vin-exempel</button>
-            <button class="secondary" type="button" id="loadRed">Ladda rött vin-exempel</button>
+            <!-- Buttons to load preset values for white/red wine -->
+            <button class="secondary" type="button" id="loadWhite">Load white wine example</button>
+            <button class="secondary" type="button" id="loadRed">Load red wine example</button>
           </div>
         </form>
-
+        <!-- Prediction result area, shown after submit -->
         <div id="result" style="margin-top:12px; display:none">
-          <h3>Resultat</h3>
+          <h3>Result</h3>
           <div id="resultBox"></div>
         </div>
       </section>
-
       <section class="card">
-        <h2>API-länkar</h2>
+        <h2>API links</h2>
         <p><a href="/health" target="_blank">/health</a> · <a href="/model-info" target="_blank">/model-info</a></p>
       </section>
     </main>
 
-    <!-- ASIDE / LEXIKON -->
+    <!-- Aside: wine lexicon and tips for users -->
     <aside class="aside">
       <section class="card">
-        <h3>📚 Vin-lexikon (dataset)</h3>
-        <p class="hint">Kortfattade beskrivningar + hur de tenderar att påverka modellens bedömning.</p>
+        <h3>📚 Wine lexicon (dataset)</h3>
+        <p class="hint">Short descriptions + how they tend to affect model predictions.</p>
         <div class="divider"></div>
         <dl class="kv">
+          <!-- Each <dt>/<dd> describes a wine feature and its effect -->
           <dt>volatile acidity</dt>
-          <dd>Flyktig syra (t.ex. ättiksyra). <em>Högre</em> nivåer ↘️ kvalitet.</dd>
-
+          <dd>Volatile acid (e.g. acetic acid). <em>Higher</em> levels ↘️ quality.</dd>
           <dt>alcohol</dt>
-          <dd>Alkoholhalt (%). <em>Högre</em> nivåer ↗️ kvalitet (upp till en gräns).</dd>
-
+          <dd>Alcohol content (%). <em>Higher</em> levels ↗️ quality (up to a point).</dd>
           <dt>density</dt>
-          <dd>Vätskans täthet. Ofta <em>lägre</em> vid högre alkohol → korrelerar med kvalitet.</dd>
-
+          <dd>Liquid density. Often <em>lower</em> with higher alcohol → correlates with quality.</dd>
           <dt>sulphates</dt>
-          <dd>Svavelhaltiga ämnen som kan stabilisera och förbättra struktur. <em>Högre</em> ↗️ kvalitet (måttligt).</dd>
-
+          <dd>Sulphur compounds that can stabilize and improve structure. <em>Higher</em> ↗️ quality (moderately).</dd>
           <dt>citric acid</dt>
-          <dd>Ger fräschör/syra. Lätt positiv inverkan i vissa viner.</dd>
-
+          <dd>Adds freshness/acidity. Slight positive effect in some wines.</dd>
           <dt>residual sugar</dt>
-          <dd>Kvarvarande socker. Effekt beror på vintyp; högt socker ≠ alltid hög kvalitet.</dd>
-
+          <dd>Remaining sugar. Effect depends on wine type; high sugar ≠ always high quality.</dd>
           <dt>chlorides</dt>
-          <dd>Saltinnehåll. <em>Högre</em> kan ↘️ kvalitet.</dd>
-
+          <dd>Salt content. <em>Higher</em> can ↘️ quality.</dd>
           <dt>free/total sulfur dioxide</dt>
-          <dd>Konservering/oxidationsskydd. För mycket kan ge bismak.</dd>
-
+          <dd>Preservation/oxidation protection. Too much can cause off-flavors.</dd>
           <dt>pH</dt>
-          <dd>Syra/bas (lägre = surare). Påverkan mer komplex; inte lika starkt samband som alkohol/volatile acidity.</dd>
-
+          <dd>Acidity/basicity (lower = more acidic). Impact is more complex; not as strong a link as alcohol/volatile acidity.</dd>
           <dt>type</dt>
-          <dd><code>white</code> eller <code>red</code>. Modellen har lärt sig mönster som skiljer typerna något.</dd>
+          <dd><code>white</code> or <code>red</code>. The model has learned patterns that differ slightly between types.</dd>
         </dl>
       </section>
-
       <section class="card">
         <h3>💡 Tips</h3>
         <ul class="hint">
-          <li>Dra i <strong>alcohol</strong>-slidern uppåt → ofta högre klass.</li>
-          <li>Dra i <strong>volatile acidity</strong>-slidern uppåt → ofta lägre klass.</li>
-          <li>Byt <strong>type</strong> för att se skillnader mellan rött/vitt.</li>
+          <li>Increase <strong>alcohol</strong> slider → often higher class.</li>
+          <li>Increase <strong>volatile acidity</strong> slider → often lower class.</li>
+          <li>Change <strong>type</strong> to see differences between red/white.</li>
         </ul>
       </section>
     </aside>
   </div>
 
-
-
-  <!-- ===== Login Modal ===== -->
+  <!-- Login Modal: shown when user clicks "Log in" -->
   <div class="modal-backdrop" id="loginModal">
     <div class="modal">
       <h3>Log in</h3>
@@ -180,11 +167,13 @@
   </div>
 
 <script>
+// Prediction form logic
+// Handles prediction form submission and result rendering
 const form = document.getElementById("predictForm");
 const resultWrap = document.getElementById("result");
 const resultBox = document.getElementById("resultBox");
 
-// sliders ↔ inputs sync
+// Sync sliders and number inputs for volatile acidity and alcohol
 const vaRange = document.getElementById("va_range");
 const vaInput = document.getElementById("va_input");
 vaRange.addEventListener("input", () => vaInput.value = Number(vaRange.value).toFixed(2));
@@ -195,27 +184,30 @@ const alcInput = document.getElementById("alc_input");
 alcRange.addEventListener("input", () => alcInput.value = Number(alcRange.value).toFixed(1));
 alcInput.addEventListener("input", () => alcRange.value = alcInput.value);
 
+// Helper: returns color classes for prediction result
 function clsColor(name) {
   if (name === "high")   return {badge:"high", fill:"fill-high"};
   if (name === "medium") return {badge:"medium", fill:"fill-medium"};
   return {badge:"low", fill:"fill-low"};
 }
 
+// Render prediction result in the resultBox
 function renderResult(json) {
   const pred = (json.prediction || "").toLowerCase();
   const palette = clsColor(pred);
 
   let html = `
     <div class="badge ${palette.badge}">
-      Prediktion: <strong style="text-transform:uppercase">${pred}</strong>
+      Prediction: <strong style="text-transform:uppercase">${pred}</strong>
     </div>
   `;
 
+  // If probabilities are available, show them as bars
   if (json.proba && json.classes) {
     const labels = json.classes;
     const probs  = json.proba;
 
-    html += `<div><div style="font-weight:600;margin:6px 0">Sannolikheter</div>`;
+    html += `<div><div style="font-weight:600;margin:6px 0">Probabilities</div>`;
     labels.forEach((lbl, i) => {
       const color = clsColor(lbl).fill;
       const pct = Math.round((probs[i] || 0) * 100);
@@ -229,9 +221,10 @@ function renderResult(json) {
     html += `</div>`;
   }
 
+  // Show input data used for prediction
   html += `
     <details class="details">
-      <summary class="summary">Visa indata</summary>
+      <summary class="summary">Show input</summary>
       <pre>${JSON.stringify(json.input, null, 2)}</pre>
     </details>
   `;
@@ -240,6 +233,7 @@ function renderResult(json) {
   resultWrap.style.display = "block";
 }
 
+// Handle prediction form submit: POSTs data to /predict and renders result
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(form).entries());
@@ -253,7 +247,7 @@ form.addEventListener("submit", async (e) => {
   renderResult(json);
 });
 
-// presets
+// Preset buttons: fill form with example data for white/red wine
 document.getElementById("loadWhite").onclick = () => {
   const preset = {"fixed acidity":7.2,"volatile acidity":0.23,"citric acid":0.32,"residual sugar":8.5,"chlorides":0.058,"free sulfur dioxide":47,"total sulfur dioxide":186,"density":0.9956,"pH":3.19,"sulphates":0.40,"alcohol":9.9,"type":"white"};
   for (const k in preset) {
@@ -273,7 +267,10 @@ document.getElementById("loadRed").onclick = () => {
   alcRange.value = preset["alcohol"]; alcInput.value = preset["alcohol"];
 };
 
-/* Grab auth elements */
+// Authentication logic
+// Handles login/logout, JWT storage, and admin panel visibility
+
+// Grab references to auth-related DOM elements
 const authBar      = document.getElementById("authBar");
 const authStatus   = document.getElementById("authStatus");
 const btnLogin     = document.getElementById("btnLogin");
@@ -281,23 +278,25 @@ const btnLogout    = document.getElementById("btnLogout");
 const adminPanel   = document.getElementById("adminPanel");
 const adminOutput  = document.getElementById("adminOutput");
 
-/* Modal elements */
+// Modal elements for login dialog
 const modal        = document.getElementById("loginModal");
 const doLogin      = document.getElementById("doLogin");
 const cancelLogin  = document.getElementById("cancelLogin");
 const loginUser    = document.getElementById("loginUser");
 const loginPass    = document.getElementById("loginPass");
 
-/* Auth state helpers */
+// Helper: get JWT token and role from localStorage
 function getToken() { try { return localStorage.getItem("jwt_token"); } catch { return null; } }
 function getRole()  { try { return localStorage.getItem("jwt_role"); }  catch { return null; } }
 
+// Set authentication state in localStorage and update UI
 function setAuth(token, role) {
   if (token) localStorage.setItem("jwt_token", token); else localStorage.removeItem("jwt_token");
   if (role)  localStorage.setItem("jwt_role", role);   else localStorage.removeItem("jwt_role");
   renderAuth();
 }
 
+// Update UI based on authentication state (shows/hides admin panel)
 function renderAuth() {
   const token = getToken();
   const role  = getRole();
@@ -310,38 +309,46 @@ function renderAuth() {
     authStatus.textContent = `Logged in as ${role || "user"}`;
     btnLogin.style.display = "none";
     btnLogout.style.display = "";
+    // Only show admin panel if role is admin
     adminPanel.style.display = (role === "admin") ? "" : "none";
   }
 }
 
-/* Attach Authorization header if token exists */
+// Helper: attaches Authorization header if JWT token exists
 function authHeaders(extra={}) {
   const token = getToken();
   return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
 }
 
-/* Login modal handling */
+// Login modal handling
+// Show modal when login button is clicked
 btnLogin.onclick = () => { modal.style.display = "flex"; loginUser.focus(); };
+// Hide modal when cancel is clicked
 cancelLogin.onclick = () => { modal.style.display = "none"; };
+// Log out: clear auth state and update UI
 btnLogout.onclick = () => { setAuth(null, null); adminOutput.textContent = "Logged out."; };
 
+// Handle login: POST credentials to /auth/login, store JWT and role on success
 doLogin.onclick = async () => {
   try {
-    const res = await fetch("/login", {
+    // IMPORTANT: endpoint must match Flask backend
+    const res = await fetch("/auth/login", {
       method: "POST",
       headers: {"Content-Type":"application/json"},
       body: JSON.stringify({ username: loginUser.value.trim(), password: loginPass.value })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
-    setAuth(json.token, json.role);
+    setAuth(json.token, json.role); // Save token and role for later requests
     modal.style.display = "none";
   } catch (e) {
     alert("Login failed. Check credentials.");
   }
 };
 
-/* Admin buttons */
+// Admin panel button handlers
+// Each button sends a request to an admin endpoint, using JWT for authorization
+
 document.getElementById("btnAdminInfo").onclick = async () => {
   try {
     const res = await fetch("/admin/model-info", { headers: authHeaders() });
@@ -364,6 +371,7 @@ document.getElementById("btnReload").onclick = async () => {
 
 document.getElementById("btnBatch").onclick = async () => {
   try {
+    // Example batch prediction request
     const batch = [{
       "fixed acidity": 7.2, "volatile acidity": 0.23, "citric acid": 0.32, "residual sugar": 8.5,
       "chlorides": 0.058, "free sulfur dioxide": 47, "total sulfur dioxide": 186, "density": 0.9956,
@@ -411,7 +419,7 @@ document.getElementById("btnClearLogs").onclick = async () => {
   }
 };
 
-/* Call once on load */
+// Initial render of authentication state on page load
 renderAuth();
 </script>
 </body>

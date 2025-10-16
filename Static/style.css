@@ -1,23 +1,29 @@
-/* ========== Layout & typografi ========== */
+/* ========== Layout & Typography Variables ========== */
+/* Define color palette and spacing for the whole app using CSS variables */
 :root {
-  --bg: #ffffff;
-  --text: #0f172a;
-  --muted: #6b7280;
-  --card: #f8fafc;
-  --border: #e5e7eb;
-  --shadow: 0 1px 4px rgba(0,0,0,.06);
-  --primary: #111827;
+  --bg: #ffffff;         /* Main background */
+  --text: #0f172a;       /* Main text color */
+  --muted: #6b7280;      /* Muted/secondary text */
+  --card: #f8fafc;       /* Card background */
+  --border: #e5e7eb;     /* Border color for cards/inputs */
+  --shadow: 0 1px 4px rgba(0,0,0,.06); /* Card shadow */
+  --primary: #111827;    /* Primary button color */
 
-  --green: #065f46;   /* high */
-  --gray:  #1f2937;   /* medium */
-  --amber: #7c2d12;   /* low */
+  /* Colors for prediction classes */
+  --green: #065f46;      /* "high" quality */
+  --gray:  #1f2937;      /* "medium" quality */
+  --amber: #7c2d12;      /* "low" quality */
+  /* Colors for probability bars */
   --bar-green: #10b981;
   --bar-gray:  #6b7280;
   --bar-amber: #f59e0b;
 }
 
+/* Universal box-sizing for easier layout */
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+
+/* Main body styling: max width, centered, padding */
 body {
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg);
@@ -27,11 +33,11 @@ body {
   padding: 0 16px 64px;
 }
 
-/* Header */
+/* Header styles */
 .header h1 { font-size: 28px; margin: 0 0 4px; }
 .muted { color: var(--muted); }
 
-/* Kort */
+/* Card component: used for panels, forms, etc. */
 .card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -41,17 +47,18 @@ body {
   margin: 12px 0;
 }
 
-/* Layout: main + aside */
+/* Main layout: grid with main and aside columns */
 .layout {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 2fr 1fr; /* Main content wider than aside */
   gap: 16px;
 }
+/* Responsive: stack columns on small screens */
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; }
 }
 
-/* Form */
+/* Form grid: two columns for inputs, single column on mobile */
 .grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -66,28 +73,33 @@ input, select {
   border: 1px solid var(--border);
   border-radius: 10px; background: #fff; color: var(--text);
 }
+/* Button styling: rounded, colored, pointer cursor */
 button {
   padding: 10px 14px; border-radius: 10px; border: 0;
   background: var(--primary); color: #fff; cursor: pointer;
 }
-button.secondary { background: #312e81; }
+button.secondary { background: #312e81; } /* Secondary button color */
 
-/* Badge + staplar */
+/* Prediction result badge and probability bars */
 .badge {
   display: inline-block; color: #fff; padding: 8px 14px;
   border-radius: 999px; margin-bottom: 10px; font-weight: 600;
 }
+/* Small pill for class labels */
 .pill {
   display: inline-block; background: #eef2ff; color: #3730a3;
   border-radius: 999px; padding: 4px 10px; font-size: 12px; margin-right: 6px;
 }
+/* Code/pre blocks for showing JSON and logs */
 pre { background: #0b1020; color: #e6edf3; padding: 12px; border-radius: 10px; overflow: auto; }
 
+/* Probability bar rows and meta info */
 .bar-row { margin: 6px 0; }
 .bar-meta { display:flex; justify-content:space-between; font-size:14px; }
 .bar { background: var(--border); border-radius: 8px; height: 10px; overflow: hidden; }
 .bar-fill { height: 10px; }
 
+/* Badge and bar colors for prediction classes */
 .badge.low { background: var(--amber); }
 .badge.medium { background: var(--gray); }
 .badge.high { background: var(--green); }
@@ -95,7 +107,7 @@ pre { background: #0b1020; color: #e6edf3; padding: 12px; border-radius: 10px; o
 .fill-medium { background: var(--bar-gray); }
 .fill-high { background: var(--bar-green); }
 
-/* Aside/lexikon */
+/* Aside/lexicon styles */
 .aside h3 { margin-top: 0; }
 .kv { margin: 8px 0; }
 .kv dt { font-weight: 700; }
@@ -103,7 +115,7 @@ pre { background: #0b1020; color: #e6edf3; padding: 12px; border-radius: 10px; o
 .hint { font-size: 13px; color: var(--muted); }
 .divider { height: 1px; background: var(--border); margin: 10px 0; }
 
-/* Sliders */
+/* Sliders for input fields */
 .range {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -113,12 +125,13 @@ pre { background: #0b1020; color: #e6edf3; padding: 12px; border-radius: 10px; o
 input[type="range"] { width: 100%; }
 
 
-/* ---- LOGIN SHEET ---- */
 /* ===== Modal (login sheet) ===== */
+/* Modal backdrop: covers screen, centers modal */
 .modal-backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,.35);
   display: none; align-items: center; justify-content: center; z-index: 50;
 }
+/* Modal dialog styling */
 .modal {
   background: var(--card); border: 1px solid var(--border); border-radius: 12px;
   box-shadow: var(--shadow); padding: 16px; width: 100%; max-width: 360px;
@@ -127,12 +140,13 @@ input[type="range"] { width: 100%; }
 .modal-actions { display: flex; gap: 8px; margin-top: 12px; }
 .modal input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 10px; }
 
+/* Badge-outline: used for login status */
 .badge-outline {
   display: inline-block; padding: 6px 10px; border-radius: 999px;
   border: 1px solid var(--border); color: var(--muted); background: #fff;
 }
 
-/* Admin panel */
+/* Admin panel styles */
 .admin-panel .row { display:flex; gap:8px; flex-wrap:wrap; }
 .admin-panel pre { max-height: 260px; }
 

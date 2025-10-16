@@ -1,9 +1,10 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token
 
+# Create a blueprint for authentication endpoints, with URL prefix "/"
 auth_bp = Blueprint("auth", __name__, url_prefix="/")
 
-# Hard-coded users
+# Hard-coded users for demo purposes (username, password, role)
 USERS = {
     "admin": {"password": "admin123", "role": "admin"},
     "user":  {"password": "user123",  "role": "user"},
@@ -11,21 +12,22 @@ USERS = {
 
 @auth_bp.post("login")
 def login():
-    """
-    Request JSON:
-      { "username": "admin", "password": "admin123" }
-    Response:
-      { "token": "..." }
-    """
+    
+    # Handles login requests.
+    # Expects JSON: { "username": "...", "password": "..." }
+    # Returns JWT token and user role if credentials are valid.
+    
     data = request.get_json(silent=True) or {}
     username = str(data.get("username", "")).strip()
     password = str(data.get("password", "")).strip()
 
     user = USERS.get(username)
     if not user or user["password"] != password:
+        # Invalid credentials: return 401 Unauthorized
         return jsonify({"error": "Invalid credentials"}), 401
 
-    # Include role as claim so we can do admin-only checks
+    # Add user role as a JWT claim for role-based access
     additional_claims = {"role": user["role"]}
     token = create_access_token(identity=username, additional_claims=additional_claims)
+    # Return token and role to frontend
     return jsonify({"token": token, "role": user["role"]}), 200

@@ -1,12 +1,14 @@
 from flask import Blueprint, jsonify, request, current_app
 from flask_jwt_extended import jwt_required, get_jwt
 
+# Create a blueprint for admin endpoints, with URL prefix "/admin"
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
-
-
 def admin_required(fn):
-    # Tiny decorator enforcing role=admin from JWT claims
+    
+    # Decorator that enforces role=admin from JWT claims.
+    # Returns 403 if the user is not an admin.
+    
     from functools import wraps
     @wraps(fn)
     @jwt_required()
@@ -20,19 +22,22 @@ def admin_required(fn):
 @admin_bp.get("feature-importance")
 @admin_required
 def admin_feature_importance():
+    # Returns feature importances from the model (for admin panel)
     svc = current_app.config["MODEL_SERVICE"]
     return jsonify(svc.feature_importance())
 
 @admin_bp.get("logs")
 @admin_required
 def admin_get_logs():
+    # Returns the prediction log (last N predictions)
     log = current_app.config.get("PRED_LOG") or []
-    # konvertera deque -> list
+    # Convert deque to list for JSON serialization
     return jsonify({"count": len(log), "items": list(log)})
 
 @admin_bp.delete("logs")
 @admin_required
 def admin_clear_logs():
+    # Clears the prediction log
     log = current_app.config.get("PRED_LOG")
     if log is not None:
         log.clear()
@@ -41,13 +46,17 @@ def admin_clear_logs():
 @admin_bp.get("model-info")
 @admin_required
 def admin_model_info():
+    # Returns model metadata (file, pipeline steps, classes, params)
     svc = current_app.config["MODEL_SERVICE"]
     return jsonify(svc.model_info())
 
 @admin_bp.post("reload-model")
 @admin_required
 def reload_model():
-    """Reload model from disk (hot-reload)."""
+    
+    # Reloads the model from disk (hot-reload).
+    # Useful for updating the model without restarting the server.
+    
     svc = current_app.config["MODEL_SERVICE"]
     # Recreate the internal model by setting _model to None and touching .model
     svc._model = None
@@ -57,10 +66,10 @@ def reload_model():
 @admin_bp.post("predict-batch")
 @admin_required
 def predict_batch():
-    """
-    Body: a JSON array of wine payloads.
-    Returns predictions (and probs) for all.
-    """
+  
+    # Accepts a JSON array of wine payloads.
+    # Returns predictions and probabilities for all items.
+    
     svc = current_app.config["MODEL_SERVICE"]
     items = request.get_json(silent=True)
     if not isinstance(items, list) or not items:
